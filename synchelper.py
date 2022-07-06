@@ -6,7 +6,20 @@ def enumItems(directory):
     for path, subdirs, files in os.walk(directory):
         for name in files:
             itempath = os.path.join(path, name)
-            items.append({'FullPath':itempath, 'Path': (os.path.relpath(itempath,directory)),'LastModTime': os.path.getmtime(itempath), 'Direction': 0})
+            items.append(
+                {'FullPath':itempath,
+                'Path': (os.path.relpath(itempath,directory)),
+                'LastModTime': os.path.getmtime(itempath),
+                'Direction': 0,
+                'Type':'File'})
+        for name in subdirs:
+            itempath = os.path.join(path, name)
+            items.append(
+                {'FullPath':itempath,
+                'Path': (os.path.relpath(itempath,directory)),
+                'LastModTime': 0,
+                'Direction': 0,
+                'Type':'Directory'})
             #0 - sync; 1 - 1->2; -1 - 2->1; 2 - delete
     return items
 
@@ -60,17 +73,22 @@ def syncItem(item,path1,path2):
 
     if abs(item["Direction"]) == 2:
         try:
-            os.remove(syncItems[abs(1-position)])
+            #os.remove(syncItems[abs(1-position)])
+            shutil.rmtree(syncItems[abs(1-position)], ignore_errors=True)
         except:
             pass
         try:
-            os.remove(syncItems[abs(position)])
+            #os.remove(syncItems[abs(position)])
+            shutil.rmtree(syncItems[abs(position)], ignore_errors=True)
         except:
             pass
     elif abs(item["Direction"]) == 1:
         try:
             os.makedirs(os.path.dirname(syncItems[position]), exist_ok=True)
-            shutil.copy2(syncItems[abs(1-position)],syncItems[position])
+            if item["Type"] == "Directory":
+                os.makedirs(syncItems[position], exist_ok=True)
+            else:
+                shutil.copy2(syncItems[abs(1-position)],syncItems[position])
         except IOError as e:
             print(u'Error in copy:{0}'.format(e));
     else:
