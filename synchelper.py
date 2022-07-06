@@ -68,7 +68,7 @@ def syncItem(item,path1,path2):
         except:
             pass
     elif abs(item["Direction"]) == 1:
-        try:o
+        try:
             os.makedirs(os.path.dirname(syncItems[position]), exist_ok=True)
             shutil.copy2(syncItems[abs(1-position)],syncItems[position])
         except IOError as e:
