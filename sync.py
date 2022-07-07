@@ -17,12 +17,10 @@ copyThread.start()
 dir1_old = []
 dir2_old = []
 isFirstSync = True
+
 while(1):
-    try:
-        dir1 = sh.enumItems(args.d1)
-        dir2 = sh.enumItems(args.d2)
-    except IOError as e:
-        print(u'Path not found!');
+    dir1 = sh.enumItems(args.d1)
+    dir2 = sh.enumItems(args.d2)
     if isFirstSync:
         sh.compareItems(dir1,dir2)
         print("indexing done")
