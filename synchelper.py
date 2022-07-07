@@ -4,22 +4,17 @@ import numpy as np
 def enumItems(directory):
     items = []
     for path, subdirs, files in os.walk(directory):
-        for name in files:
-            itempath = os.path.join(path, name)
-            items.append(
-                {'FullPath':itempath,
-                'Path': (os.path.relpath(itempath,directory)),
-                'LastModTime': os.path.getmtime(itempath),
-                'Direction': 0,
-                'Type':'File'})
-        for name in subdirs:
-            itempath = os.path.join(path, name)
-            items.append(
-                {'FullPath':itempath,
-                'Path': (os.path.relpath(itempath,directory)),
-                'LastModTime': 0,
-                'Direction': 0,
-                'Type':'Directory'})
+        for fsobj in files, subdirs:
+            for name in fsobj:
+                itempath = os.path.join(path, name)
+                isFile = os.path.isfile(itempath)
+                items.append(
+                    {'FullPath':itempath,
+                    'Source':directory,
+                    'Path': (os.path.relpath(itempath,directory)),
+                    'LastModTime': (os.path.getmtime(itempath)*int(isFile)),
+                    'Direction': 0,
+                    'isFile':isFile})
             #0 - sync; 1 - 1->2; -1 - 2->1; 2 - delete; 3 - item not exists
     return items
 
@@ -85,7 +80,7 @@ def syncItem(item,path1,path2):
     elif abs(item["Direction"]) == 1:
         try:
             os.makedirs(os.path.dirname(syncItems[position]), exist_ok=True)
-            if item["Type"] == "Directory":
+            if not item["isFile"]:
                 os.makedirs(syncItems[position], exist_ok=True)
             else:
                 shutil.copy2(syncItems[abs(1-position)],syncItems[position])
