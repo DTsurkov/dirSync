@@ -20,7 +20,7 @@ def enumItems(directory):
                 'LastModTime': 0,
                 'Direction': 0,
                 'Type':'Directory'})
-            #0 - sync; 1 - 1->2; -1 - 2->1; 2 - delete
+            #0 - sync; 1 - 1->2; -1 - 2->1; 2 - delete; 3 - item not exists
     return items
 
 def compareItems(dir1,dir2,isRemove=False):
