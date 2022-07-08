@@ -1,0 +1,6 @@
+#!/bin/bash
+
+for i in 100 200 300 400 500 600 700 800 900
+do
+dd if=/dev/urandom of=/Users/danistsurkov/github/dirSync/dirA/"file_$i" bs=1048576 count=$i
+done

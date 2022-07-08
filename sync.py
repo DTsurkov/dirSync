@@ -26,11 +26,13 @@ while(1):
         print("indexing done")
         isFirstSync = False
     else:
-        sh.markItemsToDelete(dir1,dir1_old,dir2)
-        sh.markItemsToDelete(dir2,dir2_old,dir1)
+        sh.markItemsToDelete(dir1,dir1_old,dir2,1)
+        sh.markItemsToDelete(dir2,dir2_old,dir1,-1)
+        sh.checkReadyToSync(dir1,dir1_old)
+        sh.checkReadyToSync(dir2,dir2_old)
         for d1 in (dir1,dir2):
-            for d in (list(filter(lambda item: item['Direction'] != 0, d1))):
-                print(">{0}".format(d))
+            for d in (list(filter(lambda item: item["Direction"] != 0, d1))):
+                verboseprint(">{0}".format(d))
         sh.compareItems(dir1,dir2)
 
     sh.getItemsToSync(items,dir1)
@@ -41,3 +43,4 @@ while(1):
     dir2_old = dir2.copy()
     time.sleep(args.i)
     #pass
+#dd if=/dev/urandom of=/Users/danistsurkov/github/dirSync/dirA/file bs=1048576 count=100
