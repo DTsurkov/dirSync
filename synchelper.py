@@ -68,13 +68,13 @@ def syncItem(item,path1,path2):
 
     if abs(item["Direction"]) == 2:
         try:
-            #os.remove(syncItems[abs(1-position)])
             shutil.rmtree(syncItems[abs(1-position)], ignore_errors=True)
+            os.remove(syncItems[abs(1-position)])
         except:
             pass
         try:
-            #os.remove(syncItems[abs(position)])
             shutil.rmtree(syncItems[abs(position)], ignore_errors=True)
+            os.remove(syncItems[abs(position)])
         except:
             pass
     elif abs(item["Direction"]) == 1:
