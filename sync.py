@@ -5,7 +5,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-d1','-dir1', help='directory 1',required=True)
 parser.add_argument('-d2','-dir2', help='directory 2',required=True)
 parser.add_argument('-i','-interval', type=int, help='sync interval in seconds', default = 1)
-parser.add_argument('--verbose', help='senable verbose print', action="store_true")
+parser.add_argument('--verbose', help='enable verbose print', action="store_true")
 
 args = parser.parse_args()
 verboseprint = print if args.verbose else lambda *a, **k: None
@@ -21,7 +21,8 @@ while(1):
     dir1 = sh.enumItems3(args.d1)
     dir2 = sh.enumItems3(args.d2)
     for dir in dir1,dir2:
-        sh.updateIndex(index,dir)
+        if dir:
+            sh.updateIndex(index,dir)
     sh.compareItems(index)
     sh.getItemsToSync(items, index)
     time.sleep(args.i)

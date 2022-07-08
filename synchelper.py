@@ -55,6 +55,7 @@ def enumItems3(directory):
                     'fullpath': itempath,
                     'directory':directory})
     return items
+
 def updateIndex(index,directory):
     if len(index) == 0:
         for dir in directory:
@@ -71,34 +72,41 @@ def updateIndex(index,directory):
                 new.append(Item(dir["relpath"], dir["fullpath"], dir["directory"]))
         for n in new:
             index.append(n)
+
 def compareItems(index):
     for item in index:
         if not item.isSync:
             continue
-        print("[IndexCompare] isFile: {0}, item:{1}".format(int(item.isFile), item.relpath))
         latest = (item.directory)[0]
         isModified = False
         for dir in item.directory:
-            if dir.lastModTime > latest.lastModTime:
+            if dir.lastModTime > latest.lastModTime: #found latest version
                 latest = dir
                 isModified = True
-            elif dir.lastModTime == latest.lastModTime:
+            elif dir.lastModTime == latest.lastModTime: #all versions equal
                 pass
             else:
                 isModified = True
-        for dir in item.directory:
+        for dir in item.directory: #set direction for synchronization
             if isModified:
                 if dir == latest:
                     dir.setDirection(1)
                 else:
                     dir.setDirection(-1)
             else:
-                dir.setDirection(0)
+                dir.setDirection(0) #if isModified = 0 => already synchronized
         if isModified:
             item.isSync = False
+        print("[IndexCompare] isFile: {0}, isSync: {1}, item:{2}".format(int(item.isFile), int(item.isSync), item.relpath))
+        for dir in item.directory:
+            print("Dir:{0},Direction:{1}".format(dir.directory,dir.direction))
+
 def getItemsToSync(items, index):
-    for item in list(filter(lambda item: item.isSync == False, index)):
-        items.put(item)
+    for item in index:
+        if item.isSync == False:
+#    for item in list(filter(lambda item: item.isSync == False, index)):
+            print("found item")
+            items.put(item)
 
 def syncItem(item):
     target = list(filter(lambda dir: dir.direction == -1, item.directory))
@@ -138,7 +146,6 @@ def syncItem(item):
     #         print(u'Error in copy:{0}'.format(e));
     # else:
     #     pass
-
 def syncItemsAsync(items,interval):
     print("[Syncer] Async copier started")
     while True:
