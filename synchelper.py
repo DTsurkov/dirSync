@@ -24,7 +24,7 @@ def compareItems(dir1,dir2):
         for item2 in dir2:
             if item1["Path"] == item2["Path"] and abs(item1["Direction"]) != 2:
                 isExist = True
-                item1["Direction"] = np.sign(item1["LastModTime"] - item2["LastModTime"])
+                item1["Direction"] = int(np.sign(item1["LastModTime"] - item2["LastModTime"]))
                 break
         if isExist != True and abs(item1["Direction"]) != 2:
             item1["Direction"] = 1
@@ -100,7 +100,7 @@ def syncItem(item,path1,path2):
     else:
         pass
 def syncItemsAsync(items,path1,path2,interval):
-    print("Async copier started")
+    print("Async item synchronizer started")
     while True:
         if not items.empty():
             print("=====================================")
