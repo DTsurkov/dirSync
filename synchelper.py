@@ -104,7 +104,7 @@ def syncItemsAsync(items,path1,path2,interval):
     while True:
         if not items.empty():
             print("=====================================")
-            print("[Sync] Starting item synchronizatrion. [{0}]".format(time.strftime("%H:%M:%S")))
+            print("[Sync] Starting item synchronization. [{0}]".format(time.strftime("%H:%M:%S")))
             while not items.empty():
                 item = items.get()
                 if item:
@@ -112,6 +112,6 @@ def syncItemsAsync(items,path1,path2,interval):
                     syncItem(item,path1,path2)
                     item["Direction"] = 0
                     item["ReadyToSync"] = True
-            print("[Sync] Synchronizatrion has been done. [{0}]".format(time.strftime("%H:%M:%S")))
+            print("[Sync] Synchronization has been done. [{0}]".format(time.strftime("%H:%M:%S")))
             print("=====================================")
         time.sleep(interval)
