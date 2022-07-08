@@ -10,34 +10,51 @@ parser.add_argument('--verbose', help='senable verbose print', action="store_tru
 args = parser.parse_args()
 verboseprint = print if args.verbose else lambda *a, **k: None
 
+index = []
 items = queue.Queue()
 CopyInterval = 1
-copyThread = threading.Thread(target=sh.syncItemsAsync, args=(items,args.d1,args.d2,CopyInterval))
+copyThread = threading.Thread(target=sh.syncItemsAsync, args=(items,CopyInterval))
 copyThread.start()
-dir1_old = []
-dir2_old = []
-isFirstSync = True
+
 
 while(1):
-    dir1 = sh.enumItems(args.d1)
-    dir2 = sh.enumItems(args.d2)
-    if isFirstSync:
-        sh.compareItems(dir1,dir2)
-        print("indexing done")
-        isFirstSync = False
-    else:
-        sh.markItemsToDelete(dir1,dir1_old,dir2)
-        sh.markItemsToDelete(dir2,dir2_old,dir1)
-        for d1 in (dir1,dir2):
-            for d in (list(filter(lambda item: item['Direction'] != 0, d1))):
-                print(">{0}".format(d))
-        sh.compareItems(dir1,dir2)
-
-    sh.getItemsToSync(items,dir1)
-    sh.getItemsToSync(items,dir2)
-    if not items.empty():
-        verboseprint(list(items.queue))
-    dir1_old = dir1.copy()
-    dir2_old = dir2.copy()
+    dir1 = sh.enumItems3(args.d1)
+    dir2 = sh.enumItems3(args.d2)
+    for dir in dir1,dir2:
+        sh.updateIndex(index,dir)
+    sh.compareItems(index)
+    sh.getItemsToSync(items, index)
     time.sleep(args.i)
+
+
+# items = queue.Queue()
+# CopyInterval = 1
+# copyThread = threading.Thread(target=sh.syncItemsAsync, args=(items,args.d1,args.d2,CopyInterval))
+# copyThread.start()
+# dir1_old = []
+# dir2_old = []
+# isFirstSync = True
+
+# while(1):
+#     dir1 = sh.enumItems(args.d1)
+#     dir2 = sh.enumItems(args.d2)
+#     if isFirstSync:
+#         sh.compareItems(dir1,dir2)
+#         print("indexing done")
+#         isFirstSync = False
+#     else:
+#         sh.markItemsToDelete(dir1,dir1_old,dir2)
+#         sh.markItemsToDelete(dir2,dir2_old,dir1)
+#         for d1 in (dir1,dir2):
+#             for d in (list(filter(lambda item: item['Direction'] != 0, d1))):
+#                 print(">{0}".format(d))
+#         sh.compareItems(dir1,dir2)
+#
+#     sh.getItemsToSync(items,dir1)
+#     sh.getItemsToSync(items,dir2)
+#     if not items.empty():
+#         verboseprint(list(items.queue))
+#     dir1_old = dir1.copy()
+#     dir2_old = dir2.copy()
+#     time.sleep(args.i)
     #pass
