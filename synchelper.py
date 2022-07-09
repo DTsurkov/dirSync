@@ -1,104 +1,186 @@
 import glob, os, time, itertools, shutil, queue
 import numpy as np
 
-def enumItems(directory):
-    items = []
-    for path, subdirs, files in os.walk(directory):
-        for fsobj in files, subdirs:
-            for name in fsobj:
-                itempath = os.path.join(path, name)
-                isFile = os.path.isfile(itempath)
-                items.append(
-                    {'FullPath':itempath,
-                    'Source':directory,
-                    'Path': (os.path.relpath(itempath,directory)),
-                    'LastModTime': (os.path.getmtime(itempath)*int(isFile)),
-                    'Direction': 0,
-                    'isFile':isFile})
-            #0 - sync; 1 - 1->2; -1 - 2->1; 2 - delete; 3 - item not exists
-    return items
-
-def compareItems(dir1,dir2,isRemove=False):
-    if isRemove:
-        d = 2
-    else:
-        d = 1
-    for item1 in dir1:
-        isExist = False
-        for item2 in dir2:
-            if item1["Path"] == item2["Path"] and abs(item1["Direction"]) != 2:
-                isExist = True
-                item1["Direction"] = np.sign(item1["LastModTime"] - item2["LastModTime"])
-                break
-        if isExist != True and abs(item1["Direction"]) != 2:
-            item1["Direction"] = d
-    for item2 in dir2:
-        isExist = False
-        for item1 in dir1:
-            if item2["Path"] == item1["Path"] and abs(item2["Direction"]) != 2:
-                isExist = True
-                #item2["Direction"] = np.sign(item1["LastModTime"] - item2["LastModTime"])
-                break
-        if isExist != True and abs(item2["Direction"]) != 2:
-            item2["Direction"] = -d
-
-def markItemsToDelete(dir1,dir2,dir3):
-    new = []
-    for item in dir2:
-        if list(filter(lambda item1: item1['Path'] == item["Path"], dir1)):
-            pass
-        else:
-            new.append(item)
-    for n in new:
-        for d in dir3:
-            if d["Path"] == n["Path"]:
-                d["Direction"] = 2
-
-def getItemsToSync(items,dir):
-    for item in list(filter(lambda item: item['Direction'] != 0, dir)):
-        items.put(item)
-
-def syncItem(item,path1,path2):
-    if abs(item["Direction"]) == 2:
-        shifter = 4.0
-    else:
-        shifter = 2.0
-    syncItems = [os.path.join(path1, item["Path"]),os.path.join(path2, item["Path"])]
-    position = int(item["Direction"] / shifter + 0.5) #conver -1 to 0 and 1 to 1
-
-    if abs(item["Direction"]) == 2:
+class Item:
+    def __init__(self, relpath, itempath, directory):
+        self.relpath = relpath
+        self.isFile = os.path.isfile(itempath)
+        self.isSync = True
+        self.toRemove = False
+        self.isModified = False
+        self.toCreate = False
+        self.directory = []
+        print("[Item] Item {0} has been created [{1}]. isFile {2}, isSync {3}".format(self.relpath, time.strftime("%H:%M:%S"), self.isFile, self.isSync))
+    def __del__(self):
+        print("[Item] Item {0} has been removed [{1}]. isFile {2}, isSync {3}".format(self.relpath, time.strftime("%H:%M:%S"), self.isFile, self.isSync))
+    def addDirectory(self,directory):
+        self.directory.append(Dir(self.relpath, directory, self.isFile))
+    def removeDirectory(self,directory):
+        toDel = list(filter(lambda dir: dir.directory == directory, self.directory))
         try:
-            #os.remove(syncItems[abs(1-position)])
-            shutil.rmtree(syncItems[abs(1-position)], ignore_errors=True)
+            self.directory.remove(toDel[0])
         except:
             pass
-        try:
-            #os.remove(syncItems[abs(position)])
-            shutil.rmtree(syncItems[abs(position)], ignore_errors=True)
-        except:
-            pass
-    elif abs(item["Direction"]) == 1:
-        try:
-            os.makedirs(os.path.dirname(syncItems[position]), exist_ok=True)
-            if not item["isFile"]:
-                os.makedirs(syncItems[position], exist_ok=True)
+    def markForDelete(self):
+        if list(filter(lambda dir: dir.direction == 2, self.directory)):# or (not list(filter(lambda dir: dir.direction != 3, self.directory))):
+            for dir in self.directory:
+                dir.setDirection(2)
+            self.toRemove = True
+            self.isSync = False
+            print("[Item] Item {0} marked for remove [{1}]".format(self.relpath, time.strftime("%H:%M:%S")))
+    def markForCreate(self):
+        source = list(filter(lambda dir: dir.direction == 0, self.directory))
+        target = list(filter(lambda dir: dir.direction == 3, self.directory))
+        if source and target:
+            for dir in self.directory:
+                dir.setDirection(-1)
+            (source[0]).setDirection(1)
+            self.toCreate = True
+            self.isSync = False
+            print("[Item] Item {0} marked for create [{1}]".format(self.relpath, time.strftime("%H:%M:%S")))
+
+    def foundLatestVersion(self):
+        latest = (self.directory)[0]
+        self.isModified = False
+        for dir in self.directory:
+            if self.isFile:
+                if dir.lastModTime > latest.lastModTime: #found latest version
+                    latest = dir
+                    self.isModified = True
+                elif dir.lastModTime < latest.lastModTime:
+                    self.isModified = True
+                else: #all versions equal
+                    pass
+        return latest
+    def updateDirs(self):
+        for dir in self.directory:
+            dir.update()
+    def printDirsStatus(self):
+        for dir in self.directory:
+            print("\tItem:{0}, Dir:{1}, Direction:{2}".format(self.relpath, dir.directory,dir.direction))
+    def update(self):
+        if not self.isSync:
+            return
+        self.updateDirs()
+        self.markForDelete()
+        self.markForCreate()
+        if not self.toRemove and not self.toCreate:
+            latest = self.foundLatestVersion()
+            if self.isModified:
+                for dir in self.directory:
+                    if dir == latest:
+                        dir.setDirection(1)
+                    else:
+                        dir.setDirection(-1)
+                self.isSync = False
             else:
-                shutil.copy2(syncItems[abs(1-position)],syncItems[position])
-        except IOError as e:
-            print(u'Error in copy:{0}'.format(e));
-    else:
-        pass
+                for dir in self.directory:
+                    dir.setDirection(0)
+                self.isSync = True
+        #self.printDirsStatus()
+class Dir:
+    def __init__(self, relpath, directory, isFile):
+        self.directory = directory
+        self.relpath = relpath
+        self.fullPath = os.path.join(directory, relpath)
+        self.isFile = isFile
+        self.lastModTime = 0
+        self.direction = 3
+        self.update()
+        print("[DIR] Dir {0} for item {1} has been created. Direction: {2}".format(self.directory,self.relpath,self.direction))
+    def setDirection(self,Direction):
+        self.direction = Direction
+    def update(self):
+        oldVaule = self.direction
+        try:
+            self.lastModTime = (os.path.getmtime(self.fullPath)*int(self.isFile))
+            self.direction = 0 #0 - sync; 1 - 1->2; -1 - 2->1; 2 - delete; 3 - item not exists
+        except:
+            self.lastModTime = 0
+            self.direction = 3
+        if (oldVaule != 2 and oldVaule !=3) and self.direction == 3:
+            self.direction = 2
+    def __del__(self):
+        print("[DIR] Dir {0} for item {1} has been removed".format(self.directory,self.relpath))
 
-def syncItemsAsync(items,path1,path2,interval):
-    print("Async copier started")
+def enumItems(items, directories):
+    for directory in directories:
+        for path, subdirs, files in os.walk(directory):
+            for fsobj in files, subdirs:
+                for name in fsobj:
+                    fsobjpath = os.path.join(path, name)
+                    fsobjrelpath = (os.path.relpath(fsobjpath,directory))
+                    isExist = False
+                    for item in items:
+                        if item.relpath == fsobjrelpath:
+                            isExist = True
+                            break
+                    if not isExist:
+                        item = Item(fsobjrelpath, fsobjpath, directory)
+                        for dir in directories:
+                            item.addDirectory(dir)
+                        items.append(item)
+def printItems(items):
+    print("=====================================")
+    print("[printItems] Current state. [{0}]".format(time.strftime("%H:%M:%S")))
+    for item in items:
+        print("[printItems] isFile: {0}, isSync: {1}, item:{2}".format(int(item.isFile), int(item.isSync), item.relpath))
+        for dir in item.directory:
+            print("\tDir:{0},Direction:{1}".format(dir.directory,dir.direction))
+def compareItems(index):
+    for item in index:
+        item.update()
+def delRemovedItems(index):
+    toRemove = []
+    for item in index:
+        if item.isSync == True and item.toRemove == True:
+            print("[Remover] isFile: {0}, isSync: {1}, item:{2}".format(int(item.isFile), int(item.isSync), item.relpath))
+            toRemove.append(item)
+    for t in toRemove:
+        index.remove(t)
+def getItemsToSync(items, index):
+    for item in index:
+        if item.isSync == False:
+            items.put(item)
+
+def syncItem(item):
+    if item.toRemove:
+        for dir in item.directory:
+            try:
+                shutil.rmtree(dir.fullPath, ignore_errors=True)
+                os.remove(dir.fullPath)
+            except:
+                pass
+    else:
+        target = list(filter(lambda dir: dir.direction == -1, item.directory))
+        source = list(filter(lambda dir: dir.direction == 1, item.directory))
+        if target and source:
+            for t in target:
+                try:
+                    os.makedirs(os.path.dirname(t.fullPath), exist_ok=True)
+                    if not t.isFile:
+                        os.makedirs(t.fullPath, exist_ok=True)
+                    else:
+                        shutil.copy2(source[0].fullPath,t.fullPath)
+                except IOError as e:
+                    print(u'Error in copy:{0}'.format(e));
+                t.direction = 0
+            source[0].direction = 0
+def syncItemsAsync(items,interval):
+    print("[Syncher] Async item synchronizer started")
     while True:
         if not items.empty():
-            print("found items to update")
-            item = items.get()
-            if item:
-                print("starting update files")
-                syncItem(item,path1,path2)
-                item["Direction"] = 0
-        else:
-            pass
+            print("=====================================")
+            print("[Syncher] Starting item synchronization. [{0}]".format(time.strftime("%H:%M:%S")))
+            while not items.empty():
+                item = items.get()
+                if item:
+                    print("[Syncher] Updating file.\tisSync: {0}, Item: {1}".format(item.isSync,item.relpath))
+                    syncItem(item)
+                    item.isSync = True
+                    print("[Syncher] Updating done.\tisSync: {0}, Item: {1}".format(item.isSync,item.relpath))
+                else:
+                    pass
+            print("[Syncher] Synchronization has been done. [{0}]".format(time.strftime("%H:%M:%S")))
+            print("=====================================")
         time.sleep(interval)
