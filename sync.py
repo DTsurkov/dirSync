@@ -2,8 +2,7 @@ import time, argparse, queue, threading
 import synchelper as sh
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-d1','-dir1', help='directory 1',required=True)
-parser.add_argument('-d2','-dir2', help='directory 2',required=True)
+parser.add_argument('-d','-dirs', nargs='+', help='directories',required=True)
 parser.add_argument('-i','-interval', type=int, help='sync interval in seconds', default = 1)
 parser.add_argument('--verbose', help='enable verbose print', action="store_true")
 
@@ -11,20 +10,33 @@ args = parser.parse_args()
 verboseprint = print if args.verbose else lambda *a, **k: None
 
 index = []
-items = queue.Queue()
+itemsToSync = queue.Queue()
 CopyInterval = 1
-copyThread = threading.Thread(target=sh.syncItemsAsync, args=(items,CopyInterval))
+copyThread = threading.Thread(target=sh.syncItemsAsync, args=(itemsToSync,CopyInterval))
 copyThread.start()
 
 
 while(1):
-    dir1 = sh.enumItems3(args.d1)
-    dir2 = sh.enumItems3(args.d2)
-    for dir in dir1,dir2:
-        if dir:
-            sh.updateIndex(index,dir)
+    #dirs = []
+    #dirs = args.d
+    #sh.printItems(index)
+    sh.enumItems(index, args.d)
+    #sh.printItems(index)
     sh.compareItems(index)
-    sh.getItemsToSync(items, index)
+    #sh.printItems(index)
+    #sh.RemoveItems(index)
+    #sh.printItems(index)
+    #sh.printItems(index)
+    sh.getItemsToSync(itemsToSync, index)
+    sh.delRemovedItems(index)
+
+
+    #for d in args.d:
+    #    sh.enumItems(dirs, d)
+
+    #sh.updateIndex(index,dirs)
+    #sh.compareItems(index)
+    #sh.getItemsToSync(items, index)
     time.sleep(args.i)
 
 
