@@ -38,6 +38,8 @@ class Item:
             self.toCreate = True
             self.isSync = False
             print("[Item] Item {0} marked for create [{1}]".format(self.relpath, time.strftime("%H:%M:%S")))
+        if self.isSync:
+            self.toCreate = False
 
     def foundLatestVersion(self):
         latest = (self.directory)[0]
@@ -124,7 +126,7 @@ def printItems(items):
     print("=====================================")
     print("[printItems] Current state. [{0}]".format(time.strftime("%H:%M:%S")))
     for item in items:
-        print("[printItems] isFile: {0}, isSync: {1}, item:{2}".format(int(item.isFile), int(item.isSync), item.relpath))
+        print("[printItems] isFile: {0}, isSync: {1}, toCreate: {2}, toRemove: {3}, item:{4}".format(int(item.isFile), int(item.isSync), int(item.toCreate),int(item.toRemove),item.relpath))
         for dir in item.directory:
             print("\tDir:{0},Direction:{1}".format(dir.directory,dir.direction))
 def compareItems(index):
