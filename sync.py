@@ -19,6 +19,8 @@ copyThread.start()
 while(1):
     sh.enumItems(index, args.d)
     sh.compareItems(index)
+    if args.verbose:
+        sh.printItems(index)
     sh.getItemsToSync(itemsToSync, index)
     sh.delRemovedItems(index)
     time.sleep(args.i)
