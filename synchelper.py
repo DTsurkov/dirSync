@@ -198,9 +198,9 @@ def delRemovedItems(index):
     toRemove = []
     for item in index:
         if item.isSync == True and item.toRemove == True:
-            pp.print(logprefix,"isFile: {0}\tisSync: {1}\titem:{2}"
-                .format(int(item.isFile),
-                        int(item.isSync),
+            pp.print(logprefix,"isFile: {0}\tisSync: {1}\tItem: {2}"
+                .format(item.isFile,
+                        item.isSync,
                         item.relpath))
             toRemove.append(item)
     for t in toRemove:
