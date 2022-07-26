@@ -4,9 +4,10 @@ import queue
 import threading
 import sys
 import synchelper as sh
-
+import prettyPrint as pp
 
 def main():
+    logprefix = "Main"
     parser = argparse.ArgumentParser()
     parser.add_argument('-d','-dirs', nargs='+', help='directories',required=True)
     parser.add_argument('-i','-interval', type=int, help='sync interval in seconds', default = 1)
@@ -31,11 +32,11 @@ def main():
             sh.delRemovedItems(index)
             time.sleep(args.i)
     except KeyboardInterrupt:
-        print("Stop signal has been received")
+        pp.print(logprefix,"Stop signal has been received")
         copyThreadRun.clear()
-        print("Waiting to close copier thread")
+        pp.print(logprefix,"Waiting to close copier thread")
         copyThread.join()
-        print("Script has been stopped")
+        pp.print(logprefix,"Script has been stopped")
         sys.exit(0)
 
 
