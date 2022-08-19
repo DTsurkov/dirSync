@@ -18,7 +18,7 @@ class Direction(enum.Enum):
 
 
 class Item:
-    logprefix = "Item"
+    log = pp.Log("Item")
     def __init__(self, relpath, itempath, directory):
         self.relpath = relpath
         self.isFile = os.path.isfile(itempath)
@@ -28,13 +28,13 @@ class Item:
         self.toCreate = False
         self.directory = []
         #print("[Item] Item {0} has been created [{1}]. isFile {2}, isSync {3}"
-        pp.print(self.logprefix,"Item {0} has been created. isFile {1}\tisSync {2}"
+        self.log.print("Item {0} has been created. isFile {1}\tisSync {2}"
             .format(self.relpath,
                     self.isFile,
                     self.isSync))
 
     def __del__(self):
-        pp.print(self.logprefix,"Item {0} has been removed. isFile {1}\tisSync {2}"
+        self.log.print("Item {0} has been removed. isFile {1}\tisSync {2}"
             .format(self.relpath,
                     self.isFile,
                     self.isSync))
@@ -47,7 +47,7 @@ class Item:
         try:
             self.directory.remove(toDel[0])
         except BaseException as e:
-            pp.print(self.logprefix,u'Error in removeDirectory method:{0}'
+            self.log.print(u'Error in removeDirectory method:{0}'
                 .format(e))
 
     def markForDelete(self):
@@ -56,7 +56,7 @@ class Item:
                 dir.setDirection(Direction.TO_DELETE)
             self.toRemove = True
             self.isSync = False
-            pp.print(self.logprefix,"Item {0} marked for remove"
+            self.log.print("Item {0} marked for remove"
                 .format(self.relpath))
 
     def markForCreate(self):
@@ -68,7 +68,7 @@ class Item:
             (source[0]).setDirection(Direction.SOURCE)
             self.toCreate = True
             self.isSync = False
-            pp.print(self.logprefix,"Item {0} marked for create"
+            self.log.print("Item {0} marked for create"
                 .format(self.relpath))
         if self.isSync:
             self.toCreate = False
@@ -121,7 +121,7 @@ class Item:
 
 
 class Dir:
-    logprefix = "DIR"
+    log = pp.Log("DIR")
     def __init__(self, relpath, directory, isFile):
         self.directory = directory
         self.relpath = relpath
@@ -130,7 +130,7 @@ class Dir:
         self.lastModTime = 0
         self.setDirection(Direction.FOR_CREATE)
         self.update()
-        pp.print(self.logprefix, "Dir {0} for item {1} has been created. Direction: {2}"
+        self.log.print( "Dir {0} for item {1} has been created. Direction: {2}"
             .format(self.directory,
                     self.relpath,
                     self.direction))
@@ -150,7 +150,7 @@ class Dir:
             self.setDirection(Direction.TO_DELETE)
 
     def __del__(self):
-        pp.print(self.logprefix, "Dir {0} for item {1} has been removed"
+        self.log.print( "Dir {0} for item {1} has been removed"
             .format(self.directory,
                     self.relpath))
 
@@ -174,11 +174,11 @@ def enumItems(items, directories):
                         items.append(item)
 
 def printItems(items):
-    logprefix = "printItems"
+    log = pp.Log("printItems")
     print("=====================================")
-    pp.print(logprefix, "Current state")
+    log.print("Current state")
     for item in items:
-        pp.print(logprefix, "isFile: {0}\tisSync: {1}\ttoCreate: {2}\ttoRemove: {3}\titem:{4}"
+        log.print("isFile: {0}\tisSync: {1}\ttoCreate: {2}\ttoRemove: {3}\titem:{4}"
             .format(int(item.isFile),
                     int(item.isSync),
                     int(item.toCreate),
@@ -194,11 +194,11 @@ def compareItems(index):
         item.update()
 
 def delRemovedItems(index):
-    logprefix = "Remover"
+    log = pp.Log("Remover")
     toRemove = []
     for item in index:
         if item.isSync == True and item.toRemove == True:
-            pp.print(logprefix,"isFile: {0}\tisSync: {1}\tItem: {2}"
+            log.print("isFile: {0}\tisSync: {1}\tItem: {2}"
                 .format(item.isFile,
                         item.isSync,
                         item.relpath))
@@ -213,7 +213,7 @@ def getitemsToSync(items, index):
 
 
 def syncItem(item):
-    logprefix = "syncItem"
+    log = pp.Log("syncItem")
     if item.toRemove:
         for dir in item.directory:
             try:
@@ -222,7 +222,7 @@ def syncItem(item):
             except IOError:
                 pass    #при удалении директории рутовый путь может быть удалён раньше чилдов. Поэтому могут быть лжидаемые ошибки "директория не найдена"
             except BaseException as e:
-                pp.print(logprefix,u'Error in remove item:{0}'.format(e))
+                log.print(u'Error in remove item:{0}'.format(e))
     else:
         target = list(filter(lambda dir: dir.direction == Direction.TARGET, item.directory))
         source = list(filter(lambda dir: dir.direction == Direction.SOURCE, item.directory))
@@ -235,30 +235,30 @@ def syncItem(item):
                     else:
                         shutil.copy2(source[0].fullPath,t.fullPath)
                 except BaseException as e:
-                    pp.print(logprefix,u'Error in copy:{0}'.format(e))
+                    log.print(u'Error in copy:{0}'.format(e))
                 t.setDirection(Direction.SYNCED)
             source[0].setDirection(Direction.SYNCED)
 
 def syncItemsAsync(items,interval,copyThreadRun):
-    logprefix = "Syncher"
-    pp.print(logprefix,"Async item synchronizer started")
+    log = pp.Log("Syncher")
+    log.print("Async item synchronizer started")
     while copyThreadRun.is_set():
         if not items.empty():
             print("=====================================")
-            pp.print(logprefix,"Starting items synchronization")
+            log.print("Starting items synchronization")
             while not items.empty():
                 item = items.get()
                 if item:
-                    pp.print(logprefix,"Updating file.\tisSync: {0}\tItem: {1}"
+                    log.print("Updating file.\tisSync: {0}\tItem: {1}"
                         .format(item.isSync,
                                 item.relpath))
                     syncItem(item)
                     item.isSync = True
-                    pp.print(logprefix,"Updating done.\tisSync: {0}\tItem: {1}"
+                    log.print("Updating done.\tisSync: {0}\tItem: {1}"
                         .format(item.isSync,
                                 item.relpath))
                 else:
                     pass
-            pp.print(logprefix,"Synchronization has been done")
+            log.print("Synchronization has been done")
             print("=====================================")
         time.sleep(interval)

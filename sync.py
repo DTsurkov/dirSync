@@ -7,7 +7,7 @@ import synchelper as sh
 import prettyPrint as pp
 
 def main():
-    logprefix = "Main"
+    log = pp.Log("Main")
     parser = argparse.ArgumentParser()
     parser.add_argument('-d','-dirs', nargs='+', help='directories',required=True)
     parser.add_argument('-i','-interval', type=int, help='sync interval in seconds', default = 1)
@@ -19,11 +19,14 @@ def main():
     copyInterval = 1
     copyThreadRun = threading.Event()
     copyThreadRun.set()
-    copyThread = threading.Thread(target=sh.syncItemsAsync, args=(itemsToSync,copyInterval,copyThreadRun))
+    copyThread = threading.Thread(
+        target=sh.syncItemsAsync,
+        args=(itemsToSync,copyInterval,copyThreadRun)
+        )
     copyThread.start()
 
     try:
-        while(1):
+        while True:
             sh.enumItems(index, args.d)
             sh.compareItems(index)
             if args.verbose:
@@ -32,11 +35,11 @@ def main():
             sh.delRemovedItems(index)
             time.sleep(args.i)
     except KeyboardInterrupt:
-        pp.print(logprefix,"Stop signal has been received")
+        log.print("Stop signal has been received")
         copyThreadRun.clear()
-        pp.print(logprefix,"Waiting to close copier thread")
+        log.print("Waiting to close copier thread")
         copyThread.join()
-        pp.print(logprefix,"Script has been stopped")
+        log.print("Script has been stopped")
         sys.exit(0)
 
 
