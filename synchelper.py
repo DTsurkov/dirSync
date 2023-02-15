@@ -143,6 +143,7 @@ class Dir:
         oldDirection = self.direction
         if not os.path.exists(self.directory):
             self.setDirection(Direction.SYNCED)
+            return
         try:
             self.lastModTime = (os.path.getmtime(self.fullPath)*int(self.isFile))
             self.setDirection(Direction.SYNCED) #0 - sync; 1 - 1->2; -1 - 2->1; 2 - delete; 3 - item not exists
