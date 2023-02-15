@@ -1,5 +1,8 @@
 import builtins
 import time
+import sys
+reload(sys)
+sys.setdefaultencoding('utf-8')
 
 class Log:
     def __init__ (self, prefix="PrettyPrint"):
