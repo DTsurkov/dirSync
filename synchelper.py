@@ -15,6 +15,7 @@ class Direction(enum.Enum):
     TARGET = -1
     TO_DELETE = 2
     FOR_CREATE = 3
+#     TO_SKIP = 4  # Directory unavaible
 
 
 class Item:
@@ -140,6 +141,8 @@ class Dir:
 
     def update(self):
         oldDirection = self.direction
+        if not os.path.exists(self.directory):
+            self.setDirection(Direction.SYNCED)
         try:
             self.lastModTime = (os.path.getmtime(self.fullPath)*int(self.isFile))
             self.setDirection(Direction.SYNCED) #0 - sync; 1 - 1->2; -1 - 2->1; 2 - delete; 3 - item not exists
